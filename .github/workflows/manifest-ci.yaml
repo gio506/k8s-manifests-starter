@@ -25,7 +25,7 @@ jobs:
           tar -xzf kubeconform.tar.gz kubeconform
           sudo mv kubeconform /usr/local/bin/kubeconform
       - name: Validate Kubernetes schemas
-        run: kubeconform -summary -strict k8s/*.yaml
+        run: kubeconform -summary -strict -skip Kustomization k8s/*.yaml
 
   kustomize-build:
     runs-on: ubuntu-latest
