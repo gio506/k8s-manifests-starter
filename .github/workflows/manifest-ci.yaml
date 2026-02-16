@@ -1,0 +1,55 @@
+name: Manifest CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  yamllint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install yamllint
+        run: pipx install yamllint
+      - name: Lint YAML files
+        run: yamllint .
+
+  schema-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz -o kubeconform.tar.gz
+          tar -xzf kubeconform.tar.gz kubeconform
+          sudo mv kubeconform /usr/local/bin/kubeconform
+      - name: Validate Kubernetes schemas
+        run: kubeconform -summary -strict k8s/*.yaml
+
+  kustomize-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.0
+      - name: Render manifests with kubectl kustomize
+        run: kubectl kustomize k8s > /tmp/rendered.yaml
+      - name: Show resource kinds
+        run: kubectl kustomize k8s | awk '/^kind:/{print $2}'
+
+  manifest-check:
+    runs-on: ubuntu-latest
+    needs: [yamllint, schema-validate, kustomize-build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.30.0
+      - name: Client-side manifest check
+        run: |
+          kubectl kustomize k8s > rendered.yaml
+          kubectl apply --dry-run=client -f rendered.yaml
