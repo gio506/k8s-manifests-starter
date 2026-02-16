@@ -20,10 +20,12 @@ This file explains **what each command is for** in this starter repo.
 - `kubectl kustomize k8s > rendered.yaml`
   - Save rendered resources to one file for validation/debugging.
 - `kubectl apply --dry-run=client -f rendered.yaml`
-  - Parse and validate manifests client-side without creating resources.
+  - Client dry-run against your configured cluster context (still needs API discovery).
+- `for kind in Namespace ConfigMap Deployment Service Ingress HorizontalPodAutoscaler; do grep -q "^kind: ${kind}$" rendered.yaml; done`
+  - Cluster-independent CI-style check that rendered output contains all expected resource kinds.
 - `yamllint .`
   - Lint YAML style/formatting.
-- `kubeconform -summary -strict k8s/*.yaml`
+- `kubeconform -summary -strict -skip Kustomization k8s/*.yaml`
   - Validate resource schemas against Kubernetes OpenAPI specs.
 
 ## Deploy and inspect

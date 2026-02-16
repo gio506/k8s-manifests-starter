@@ -49,8 +49,20 @@ jobs:
         uses: azure/setup-kubectl@v4
         with:
           version: v1.30.0
-      - name: Client-side manifest check
+      - name: Basic rendered-manifest checks (cluster independent)
         run: |
-          # Disable server-side OpenAPI lookup because CI has no live cluster/API server.
           kubectl kustomize k8s > rendered.yaml
-          kubectl apply --dry-run=client --validate=false -f rendered.yaml
+
+          # Ensure expected resource kinds exist in the rendered output.
+          for kind in Namespace ConfigMap Deployment Service Ingress HorizontalPodAutoscaler; do
+            grep -q "^kind: ${kind}$" rendered.yaml || {
+              echo "Missing kind in rendered output: ${kind}";
+              exit 1;
+            }
+          done
+
+          # Ensure namespaced resources target demo-web namespace.
+          test "$(grep -c '^  namespace: demo-web$' rendered.yaml)" -ge 5 || {
+            echo "Expected namespaced resources to target demo-web";
+            exit 1;
+          }
