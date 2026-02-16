@@ -51,5 +51,6 @@ jobs:
           version: v1.30.0
       - name: Client-side manifest check
         run: |
+          # Disable server-side OpenAPI lookup because CI has no live cluster/API server.
           kubectl kustomize k8s > rendered.yaml
-          kubectl apply --dry-run=client -f rendered.yaml
+          kubectl apply --dry-run=client --validate=false -f rendered.yaml
