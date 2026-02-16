@@ -123,4 +123,4 @@ kind delete cluster --name manifests-starter
 1. **yamllint**: syntax/style checks for YAML.
 2. **schema-validate**: `kubeconform` strict schema validation.
 3. **kustomize-build**: render resources via `kubectl kustomize`.
-4. **manifest-check**: `kubectl apply --dry-run=client` on rendered output.
+4. **manifest-check**: cluster-independent checks against rendered output (required kinds + namespace assertions).
