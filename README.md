@@ -78,6 +78,8 @@ kubectl wait --namespace ingress-nginx \
 
 ```bash
 kubectl apply -k k8s
+kubectl -n demo-web rollout status deployment/web --timeout=120s
+./scripts/smoke.sh
 ```
 
 ### 4) Verify resources
