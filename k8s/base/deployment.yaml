@@ -21,6 +21,9 @@ spec:
           ports:
             - containerPort: 80
               name: http
+          env:
+            - name: APP_STAGE
+              value: base
           resources:
             requests:
               cpu: 100m

@@ -1,16 +1,13 @@
 # k8s-manifests-starter
 
-Starter Kubernetes manifests for deploying a simple nginx web app with local **kind** instructions and CI checks.
+Starter Kubernetes manifests for deploying a simple nginx web app with local **kind** instructions, a `base` plus `overlays/dev` structure, and CI checks.
 
 ## What is included
 
-- Namespace
-- ConfigMap
-- Deployment
-- Service
-- Ingress (optional to use locally)
-- HorizontalPodAutoscaler (optional; requires Metrics Server)
+- `k8s/base` with Namespace, ConfigMap, Deployment, Service, Ingress, and HPA
+- `k8s/overlays/dev` that reduces replicas and sets `APP_STAGE=dev`
 - Kustomize entrypoint (`k8s/kustomization.yaml`)
+- helper scripts for kind creation and smoke verification
 
 ## Project tree
 
@@ -20,14 +17,23 @@ Starter Kubernetes manifests for deploying a simple nginx web app with local **k
 ├── .yamllint.yaml
 ├── CHEATSHEET.md
 ├── README.md
-└── k8s
-    ├── configmap.yaml
-    ├── deployment.yaml
-    ├── hpa.yaml
-    ├── ingress.yaml
-    ├── kustomization.yaml
-    ├── namespace.yaml
-    └── service.yaml
+├── FILES_EXPLAINED.md
+├── scripts/
+│   ├── kind_up.sh
+│   └── smoke.sh
+└── k8s/
+    ├── base/
+    │   ├── configmap.yaml
+    │   ├── deployment.yaml
+    │   ├── hpa.yaml
+    │   ├── ingress.yaml
+    │   ├── kustomization.yaml
+    │   ├── namespace.yaml
+    │   └── service.yaml
+    ├── overlays/dev/
+    │   ├── kustomization.yaml
+    │   └── patch-deployment.yaml
+    └── kustomization.yaml
 ```
 
 ### File quick purpose
@@ -35,13 +41,11 @@ Starter Kubernetes manifests for deploying a simple nginx web app with local **k
 - `.github/workflows/manifest-ci.yaml`: CI pipeline with yamllint, kubeconform, kustomize rendering, and dry-run checks.
 - `.yamllint.yaml`: yamllint configuration.
 - `CHEATSHEET.md`: command reference for cluster, deploy, debug, and cleanup.
-- `k8s/namespace.yaml`: logical namespace (`demo-web`) for all resources.
-- `k8s/configmap.yaml`: static `index.html` served by nginx.
-- `k8s/deployment.yaml`: nginx Deployment with probes/resources and ConfigMap mount.
-- `k8s/service.yaml`: ClusterIP Service exposing port 80.
-- `k8s/ingress.yaml`: optional Ingress rule (`web.local`) for ingress-nginx.
-- `k8s/hpa.yaml`: optional autoscaling based on CPU utilization.
-- `k8s/kustomization.yaml`: single render/apply entrypoint.
+- `k8s/base/*`: reusable base manifests.
+- `k8s/overlays/dev/*`: development-specific adjustments.
+- `k8s/kustomization.yaml`: single render/apply entrypoint to the dev overlay.
+- `scripts/kind_up.sh`: creates a local kind cluster.
+- `scripts/smoke.sh`: verifies HTTP access through a port-forward.
 
 ## Prerequisites
 
@@ -56,7 +60,7 @@ Starter Kubernetes manifests for deploying a simple nginx web app with local **k
 ### 1) Create a local cluster
 
 ```bash
-kind create cluster --name manifests-starter
+./scripts/kind_up.sh
 kubectl cluster-info --context kind-manifests-starter
 ```
 
@@ -91,6 +95,7 @@ Port-forward (works without ingress):
 ```bash
 kubectl -n demo-web port-forward svc/web 8080:80
 curl -s http://localhost:8080 | head
+bash ./scripts/smoke.sh
 ```
 
 Ingress test (if ingress-nginx installed):
@@ -122,5 +127,5 @@ kind delete cluster --name manifests-starter
 
 1. **yamllint**: syntax/style checks for YAML.
 2. **schema-validate**: `kubeconform` strict schema validation.
-3. **kustomize-build**: render resources via `kubectl kustomize`.
-4. **manifest-check**: cluster-independent checks against rendered output (required kinds + namespace assertions).
+3. **kustomize-build**: render the `overlays/dev` manifests via `kubectl kustomize`.
+4. **manifest-check**: cluster-independent checks against rendered output, including the dev overlay assertions.
