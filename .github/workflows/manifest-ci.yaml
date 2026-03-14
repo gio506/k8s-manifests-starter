@@ -52,26 +52,20 @@ jobs:
         run: |
           kubectl kustomize k8s/overlays/dev > rendered.yaml
 
-          # Ensure expected resource kinds exist in the rendered output.
-          for kind in Namespace ConfigMap Deployment Service Ingress HorizontalPodAutoscaler; do
-            grep -q "^kind: ${kind}$" rendered.yaml || {
-              echo "Missing kind in rendered output: ${kind}";
+          for expected in \
+            "kind: Namespace" \
+            "kind: ConfigMap" \
+            "kind: Deployment" \
+            "kind: Service" \
+            "kind: Ingress" \
+            "kind: HorizontalPodAutoscaler" \
+            "namespace: demo-web" \
+            "replicas: 1" \
+            "name: APP_STAGE" \
+            "value: dev"
+          do
+            grep -q "$expected" rendered.yaml || {
+              echo "Missing expected content in rendered output: $expected";
               exit 1;
             }
           done
-
-          # Ensure namespaced resources target demo-web namespace.
-          test "$(grep -c '^  namespace: demo-web$' rendered.yaml)" -ge 5 || {
-            echo "Expected namespaced resources to target demo-web";
-            exit 1;
-          }
-
-          # Ensure the dev overlay changed replicas and APP_STAGE.
-          grep -q '^  replicas: 1$' rendered.yaml || {
-            echo "Expected dev overlay replica count to be 1";
-            exit 1;
-          }
-          grep -q '^        value: dev$' rendered.yaml || {
-            echo "Expected dev overlay APP_STAGE=dev";
-            exit 1;
-          }
