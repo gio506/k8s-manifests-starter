@@ -13,6 +13,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install yamllint
         run: pipx install yamllint
+      - name: Normalize manifest and script line endings
+        run: |
+          find . -type f \( -name '*.yml' -o -name '*.yaml' -o -name '*.sh' \) -print0 | xargs -0 sed -i 's/\r$//'
       - name: Check shell syntax
         run: bash -n scripts/*.sh
       - name: Lint YAML files
